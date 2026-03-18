@@ -1,4 +1,4 @@
-package com.example.qat
+package com.quickaidtech.qat
 
 import io.flutter.embedding.android.FlutterActivity
 
