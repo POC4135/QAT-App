@@ -1,4 +1,4 @@
-# QuickAid QAT App
+# QuickAid App
 
 QuickAid QAT is a Flutter-based resident emergency companion application. The
 current repository contains the client application, platform packaging, local
