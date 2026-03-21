@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_theme.dart';
+
 class AccessibilityModeSection extends StatelessWidget {
   const AccessibilityModeSection({
     super.key,
@@ -16,29 +18,46 @@ class AccessibilityModeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ui = context.qatUi;
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(ui.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Safety & Accessibility',
+              accessibilityMode ? 'Accessibility Mode is On' : 'Safety & Accessibility',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              'Reduce density, simplify reading, and keep safety controls obvious.',
+              accessibilityMode
+                  ? 'Large text, stronger contrast, simpler layouts, and calmer motion are active across the app.'
+                  : 'Reduce density, simplify reading, and keep safety controls obvious.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 12),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Accessibility Mode'),
-              subtitle: const Text('Larger, calmer interface with fewer distractions.'),
-              value: accessibilityMode,
-              onChanged: onAccessibilityChanged,
-            ),
+            const SizedBox(height: 16),
+            if (accessibilityMode) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => onAccessibilityChanged(false),
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: const Text('Turn Off Accessibility Mode'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ] else
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Accessibility Mode'),
+                subtitle: const Text(
+                  'Larger text, bigger controls, and fewer distractions.',
+                ),
+                value: accessibilityMode,
+                onChanged: onAccessibilityChanged,
+              ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: const Text('Exclamation Mode'),

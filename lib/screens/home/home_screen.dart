@@ -1,45 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/launch_service.dart';
 import '../../core/app_routes.dart';
+import '../../core/presentation.dart';
 import '../../core/app_state.dart';
+import '../../core/app_theme.dart';
 import '../../models/device_health.dart';
 import '../../models/emergency_incident.dart';
 import '../../widgets/contact_shortcut_row.dart';
 import '../../widgets/device_status_card.dart';
 import '../../widgets/emergency_action_card.dart';
-import '../../widgets/quick_action_tile.dart';
 import '../../widgets/status_banner.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
-    required this.onOpenHistoryTab,
     required this.onOpenDevicesTab,
-    required this.onOpenProfileTab,
   });
 
-  final VoidCallback onOpenHistoryTab;
   final VoidCallback onOpenDevicesTab;
-  final VoidCallback onOpenProfileTab;
-
-  Future<void> _callPrimaryContact(String phone) async {
-    await launchUrl(Uri(scheme: 'tel', path: phone));
-  }
 
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
+    final ui = context.qatUi;
     final activeIncident = appState.activeIncident;
     final primaryContact =
         appState.primaryContacts.isEmpty ? null : appState.primaryContacts.first;
+    final highlightedDevices = appState.devices.take(2).toList();
     final warningCount = appState.devices
         .where((device) => device.status != DeviceStatus.online)
         .length;
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+          ui.screenHorizontalPadding,
+          ui.screenVerticalPadding,
+          ui.screenHorizontalPadding,
+          32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -49,7 +49,9 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              appState.account.homeLabel,
+              ui.accessibilityMode
+                  ? 'Your home emergency dashboard'
+                  : appState.account.homeLabel,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 18),
@@ -62,31 +64,6 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
             ],
-            StatusBanner(
-              tone: activeIncident != null ? StatusTone.emergency : StatusTone.ok,
-              title: activeIncident != null
-                  ? '${activeIncident.severityLabel} in progress'
-                  : 'System OK',
-              message: activeIncident != null
-                  ? 'Contacts were alerted and the incident is active. Open emergency status for the latest response updates.'
-                  : warningCount == 0
-                      ? 'All core devices are online and ready. You can trigger an alert or review details if needed.'
-                      : '$warningCount device${warningCount == 1 ? '' : 's'} need attention. Review details when you have a moment.',
-              actionLabel:
-                  activeIncident != null ? 'Open emergency status' : 'View details',
-              onAction: () {
-                if (activeIncident != null) {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.emergencyActive,
-                    arguments: activeIncident.id,
-                  );
-                } else {
-                  onOpenDevicesTab();
-                }
-              },
-            ),
-            const SizedBox(height: 16),
             EmergencyActionCard(
               title: activeIncident != null
                   ? 'Stay with the emergency flow'
@@ -103,6 +80,7 @@ class HomeScreen extends StatelessWidget {
                   : appState.account.offlineMode
                       ? 'Call primary contact'
                   : 'Start emergency alert',
+              useRoundPrimary: activeIncident == null,
               onPrimaryTap: () {
                 if (activeIncident != null) {
                   Navigator.pushNamed(
@@ -112,96 +90,97 @@ class HomeScreen extends StatelessWidget {
                   );
                 } else if (appState.account.offlineMode &&
                     primaryContact != null) {
-                  _callPrimaryContact(primaryContact.phone);
+                  launchPhoneCall(context, primaryContact.phone);
                 } else {
                   Navigator.pushNamed(context, AppRoutes.emergencyChoice);
                 }
               },
-              secondaryLabel: activeIncident == null ? 'View alert history' : null,
-              onSecondaryTap: activeIncident == null ? onOpenHistoryTab : null,
+            ),
+            const SizedBox(height: 16),
+            StatusBanner(
+              tone: activeIncident != null ? StatusTone.emergency : StatusTone.ok,
+              title: activeIncident != null
+                  ? incidentHeadline(
+                      activeIncident,
+                      accessibilityMode: ui.accessibilityMode,
+                    )
+                  : 'System OK',
+              message: activeIncident != null
+                  ? 'Contacts were alerted and the incident is active. Open emergency status for the latest response updates.'
+                  : warningCount == 0
+                      ? 'All core devices are online and ready. You can trigger an alert or review details if needed.'
+                      : ui.accessibilityMode
+                          ? '$warningCount device${warningCount == 1 ? '' : 's'} need attention. Open devices to review what needs attention.'
+                          : '$warningCount device${warningCount == 1 ? '' : 's'} need attention. Review details when you have a moment.',
+              actionLabel: activeIncident != null
+                  ? 'Open emergency status'
+                  : ui.accessibilityMode
+                      ? (warningCount > 0 ? 'Open devices' : null)
+                      : 'View details',
+              onAction: () {
+                if (activeIncident != null) {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.emergencyActive,
+                    arguments: activeIncident.id,
+                  );
+                } else if (ui.accessibilityMode) {
+                  Navigator.pushNamed(context, AppRoutes.devices);
+                } else {
+                  onOpenDevicesTab();
+                }
+              },
             ),
             const SizedBox(height: 22),
-            _SectionLabel(
-              title: 'Primary contacts',
-              subtitle:
-                  'Keep direct contact actions one tap away during stress.',
-            ),
-            const SizedBox(height: 12),
-            ContactShortcutRow(contacts: appState.primaryContacts),
-            const SizedBox(height: 22),
-            _SectionLabel(
-              title: 'Device highlights',
-              subtitle: warningCount == 0
-                  ? 'All devices online.'
-                  : '$warningCount device${warningCount == 1 ? '' : 's'} need attention.',
-            ),
-            const SizedBox(height: 12),
-            for (final device in appState.devices.take(2)) ...[
-              DeviceStatusCard(
-                device: device,
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  AppRoutes.deviceDetail,
-                  arguments: device.id,
-                ),
+            if (ui.accessibilityMode) ...[
+              if (activeIncident != null)
+                _ActiveIncidentPreview(incident: activeIncident),
+            ] else ...[
+              _SectionLabel(
+                title: 'Primary contacts',
+                subtitle:
+                    'Keep direct contact actions one tap away during stress.',
               ),
-              if (device != appState.devices.take(2).last)
-                const SizedBox(height: 12),
-            ],
-            const SizedBox(height: 22),
-            const _SectionLabel(
-              title: 'Quick access',
-              subtitle:
-                  'Primary info stays close. Secondary actions are one more tap away.',
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: 168,
-                  child: QuickActionTile(
-                    icon: Icons.history_rounded,
-                    title: 'History',
-                    subtitle: 'Review recent incidents and outcomes.',
-                    onTap: onOpenHistoryTab,
-                  ),
-                ),
-                SizedBox(
-                  width: 168,
-                  child: QuickActionTile(
-                    icon: Icons.sensors_rounded,
-                    title: 'Devices',
-                    subtitle: 'See health, attention items, and test status.',
-                    onTap: onOpenDevicesTab,
-                  ),
-                ),
-                SizedBox(
-                  width: 168,
-                  child: QuickActionTile(
-                    icon: Icons.group_outlined,
-                    title: 'Contacts',
-                    subtitle: 'Manage who gets notified first.',
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.contacts),
-                  ),
-                ),
-                SizedBox(
-                  width: 168,
-                  child: QuickActionTile(
-                    icon: Icons.settings_accessibility_rounded,
-                    title: 'Safety settings',
-                    subtitle: 'Accessibility mode, degraded mode, and support.',
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.settings),
-                  ),
-                ),
-              ],
-            ),
-            if (activeIncident != null) ...[
+              const SizedBox(height: 12),
+              ContactShortcutRow(contacts: appState.primaryContacts),
               const SizedBox(height: 22),
-              _ActiveIncidentPreview(incident: activeIncident),
+              _SectionLabel(
+                title: 'Device highlights',
+                subtitle: warningCount == 0
+                    ? 'All devices online.'
+                    : '$warningCount device${warningCount == 1 ? '' : 's'} need attention.',
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 12.0;
+                  final itemWidth = (constraints.maxWidth - spacing) / 2;
+
+                  return Wrap(
+                    key: const ValueKey('home-device-highlights-grid'),
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (final device in highlightedDevices)
+                        SizedBox(
+                          width: itemWidth,
+                          child: DeviceStatusCard(
+                            device: device,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.deviceDetail,
+                              arguments: device.id,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              if (activeIncident != null) ...[
+                const SizedBox(height: 22),
+                _ActiveIncidentPreview(incident: activeIncident),
+              ],
             ],
           ],
         ),
@@ -238,7 +217,7 @@ class _ActiveIncidentPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(context.qatUi.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

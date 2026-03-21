@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/presentation.dart';
 import '../core/app_theme.dart';
 import '../models/device_health.dart';
 
@@ -15,24 +16,34 @@ class DeviceStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = _statusTone(device.status);
+    final ui = context.qatUi;
+    final palette = context.qatPalette;
+    final tone = _DeviceTone(
+      deviceStatusLabel(device.status),
+      switch (device.status) {
+        DeviceStatus.online => palette.ok,
+        DeviceStatus.needsAttention => palette.warning,
+        DeviceStatus.offline => palette.emergency,
+      },
+    );
 
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ui.cardRadius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(ui.cardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      device.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                  Text(
+                    device.name,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   _StatusPill(label: tone.label, color: tone.color),
                 ],
@@ -61,7 +72,10 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: context.qatUi.accessibilityMode ? 14 : 10,
+        vertical: context.qatUi.accessibilityMode ? 8 : 6,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -79,15 +93,4 @@ class _DeviceTone {
 
   final String label;
   final Color color;
-}
-
-_DeviceTone _statusTone(DeviceStatus status) {
-  switch (status) {
-    case DeviceStatus.online:
-      return const _DeviceTone('Online', QatColors.ok);
-    case DeviceStatus.needsAttention:
-      return const _DeviceTone('Needs attention', QatColors.warning);
-    case DeviceStatus.offline:
-      return const _DeviceTone('Offline', QatColors.emergency);
-  }
 }

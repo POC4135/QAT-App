@@ -1,5 +1,10 @@
 # Production Readiness Audit Plan
 
+## Audit Mode
+- This repository is the client/audit hub for a multi-repo system review.
+- The authoritative cross-repo inventory is tracked in [`REPO_MANIFEST.md`](/Users/prakhar/Documents/QAT/qat/REPO_MANIFEST.md).
+- Current audit reality: only the client repo is available locally; backend, workers, AWS/IaC, CI/CD, and system ops docs are not supplied.
+
 ## Repo Map
 - Flutter client code: [`lib/`](/Users/prakhar/Documents/QAT/qat/lib)
 - Platform targets: [`android/`](/Users/prakhar/Documents/QAT/qat/android), [`ios/`](/Users/prakhar/Documents/QAT/qat/ios), [`web/`](/Users/prakhar/Documents/QAT/qat/web), [`macos/`](/Users/prakhar/Documents/QAT/qat/macos), [`linux/`](/Users/prakhar/Documents/QAT/qat/linux), [`windows/`](/Users/prakhar/Documents/QAT/qat/windows)
@@ -7,11 +12,35 @@
 - Client CI added in this audit: [`.github/workflows/flutter-verify.yml`](/Users/prakhar/Documents/QAT/qat/.github/workflows/flutter-verify.yml)
 - Client runbooks added in this audit: [`docs/runbooks/client-release.md`](/Users/prakhar/Documents/QAT/qat/docs/runbooks/client-release.md), [`docs/runbooks/support-triage.md`](/Users/prakhar/Documents/QAT/qat/docs/runbooks/support-triage.md)
 
+### Cross-Repo Manifest
+- Client/mobile-web:
+  - repo: `QAT-App`
+  - remote: `https://github.com/POC4135/QAT-App`
+  - branch: `main`
+  - local path: `/Users/prakhar/Documents/QAT/qat`
+- Backend/API:
+  - repo: not supplied
+  - status: `BLOCKER`
+- Async workers/escalation:
+  - repo: not supplied
+  - status: `BLOCKER`
+- AWS/IaC:
+  - repo: not supplied
+  - status: `BLOCKER`
+- CI/CD definitions:
+  - repo: not supplied
+  - status: `BLOCKER`
+- Ops/runbooks/support docs:
+  - repo: not supplied
+  - status: `BLOCKER`
+
 ### Scope Gaps Found In Repo Inventory
-- No backend service code or API contracts
-- No AWS infrastructure-as-code
-- No queue, notification, persistence, or escalation scheduler implementation
-- No server-side auth, authorization, idempotency, or audit log implementation
+- No backend/API repo supplied for auth, incident lifecycle, or persistence
+- No worker/escalation repo supplied for fan-out, retries, or timing logic
+- No AWS infrastructure-as-code repo supplied
+- No system-level CI/CD repo supplied
+- No system-level runbook/docs repo supplied
+- Only the client repo is available for direct inspection and remediation in this environment
 
 ### Build And Test Entry Points
 - `flutter analyze`
@@ -23,10 +52,11 @@
 ## Threat Model
 ### Trust Boundaries
 - Resident client UI
-- Future auth/API boundary
-- Future notification and escalation boundary
-- Future datastore and audit boundary
-- Future device heartbeat ingestion boundary
+- Backend/API boundary
+- Worker/queue and notification boundary
+- Datastore and audit boundary
+- Device heartbeat ingestion boundary
+- AWS infrastructure and deploy boundary
 
 ### Assets
 - resident name and home label
@@ -47,11 +77,12 @@
 - duplicate incident creation from repeated emergency triggers
 - offline users being allowed to perform unconfirmable state changes
 - shipping placeholder bundle identifiers or unsafe release signing defaults
-- false production assumptions caused by the total absence of backend and AWS assets
+- false production assumptions caused by missing backend, worker, AWS, CI/CD, and ops repos
 
 ## Test Strategy
 ### Static And Configuration Checks
 - repo inventory and missing-component scan
+- cross-repo manifest completeness check
 - regex-based secret scan
 - dependency inventory with `flutter pub deps --style=compact`
 - platform packaging review for Android, iOS, macOS, and web metadata
@@ -64,7 +95,7 @@
 - `flutter build apk` if the local Android SDK exists
 
 ### Blocked End-To-End Verification
-The following cannot be executed from this repo because the server-side system is absent:
+The following cannot be executed until the missing system repos are supplied:
 - caregiver notification delivery
 - acknowledge or claim from a remote responder
 - auto escalation after timeout
@@ -76,6 +107,7 @@ The following cannot be executed from this repo because the server-side system i
 ## Production Gates
 - zero open `BLOCKER`
 - zero open `HIGH`
+- all required repos are present in [`REPO_MANIFEST.md`](/Users/prakhar/Documents/QAT/qat/REPO_MANIFEST.md)
 - `flutter analyze` passes
 - `flutter test` passes
 - `flutter build web` passes
@@ -83,12 +115,14 @@ The following cannot be executed from this repo because the server-side system i
 - no secrets detected in repo scan
 - client CI workflow exists and enforces analyze, test, and web build
 - client release and support runbooks exist
-- backend, infrastructure, and operability assets exist before any `GO` decision
+- backend, worker, infrastructure, CI/CD, and operability assets exist before any `GO` decision
 
 ## Execution Checklist
-1. Inventory the repository and note missing subsystems.
-2. Review client state, offline handling, packaging, and sample data.
-3. Fix client correctness and privacy issues with regression tests.
-4. Add minimum client CI and runbook coverage.
-5. Re-run analyze, tests, build, dependency inventory, and secret scan.
-6. Document findings, verification, patches, and readiness decision.
+1. Lock the multi-repo inventory in [`REPO_MANIFEST.md`](/Users/prakhar/Documents/QAT/qat/REPO_MANIFEST.md).
+2. Open `BLOCKER` findings for every missing source repo or deploy environment.
+3. Review the client repo and retain client-side hardening as baseline.
+4. Pull in backend, worker, AWS/IaC, CI/CD, and ops-doc repos before any further end-to-end claims.
+5. Run discovery-only review across every supplied repo and document findings before fixing.
+6. Fix all `BLOCKER` and `HIGH` issues with regression coverage.
+7. Re-run client, backend, infra, and E2E verification.
+8. Publish the final `GO` or `NO-GO` decision.

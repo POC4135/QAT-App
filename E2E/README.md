@@ -10,8 +10,10 @@ Client-only widget and state tests exercise:
 - history and profile drill-in navigation
 
 See:
-- [`test/app_state_test.dart`](/Users/prakhar/Documents/QAT/qat/test/app_state_test.dart)
-- [`test/widget_test.dart`](/Users/prakhar/Documents/QAT/qat/test/widget_test.dart)
+- [`docs/testing_sop.md`](/Users/prakhar/Documents/QAT/qat/docs/testing_sop.md)
+- [`test/unit/app_state_test.dart`](/Users/prakhar/Documents/QAT/qat/test/unit/app_state_test.dart)
+- [`test/smoke/`](/Users/prakhar/Documents/QAT/qat/test/smoke)
+- [`test/regression/`](/Users/prakhar/Documents/QAT/qat/test/regression)
 
 ## What Is Not Covered Because The System Is Missing
 The following required end-to-end cases remain blocked until backend and infrastructure code exists:

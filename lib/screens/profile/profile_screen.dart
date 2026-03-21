@@ -2,35 +2,57 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_routes.dart';
 import '../../core/app_state.dart';
+import '../../core/app_theme.dart';
 import '../../widgets/accessibility_mode_section.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+    this.showScreenTitle = true,
+  });
+
+  final bool showScreenTitle;
 
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
     final contacts = appState.contacts.take(2).toList();
+    final ui = context.qatUi;
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+          ui.screenHorizontalPadding,
+          ui.screenVerticalPadding,
+          ui.screenHorizontalPadding,
+          32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Profile',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Keep contacts, safety modes, and support options in one place without crowding the primary emergency flow.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 18),
+            if (showScreenTitle) ...[
+              Text('Profile', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 8),
+              Text(
+                ui.accessibilityMode
+                    ? 'Keep contacts and safety settings easy to reach.'
+                    : 'Keep contacts, safety modes, and support options in one place without crowding the primary emergency flow.',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 18),
+            ],
+            if (ui.accessibilityMode) ...[
+              AccessibilityModeSection(
+                accessibilityMode: appState.account.accessibilityMode,
+                exclamationMode: appState.account.exclamationMode,
+                onAccessibilityChanged: appState.setAccessibilityMode,
+                onExclamationChanged: appState.setExclamationMode,
+              ),
+              const SizedBox(height: 16),
+            ],
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(ui.cardPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -55,24 +77,13 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(ui.cardPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Emergency contacts',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, AppRoutes.contacts),
-                          child: const Text('Manage'),
-                        ),
-                      ],
+                    Text(
+                      'Emergency contacts',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 10),
                     for (final contact in contacts) ...[
@@ -87,41 +98,64 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       if (contact != contacts.last) const Divider(height: 20),
                     ],
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ui.accessibilityMode
+                          ? FilledButton(
+                              onPressed: () =>
+                                  Navigator.pushNamed(context, AppRoutes.contacts),
+                              child: const Text('Manage contacts'),
+                            )
+                          : Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.contacts,
+                                ),
+                                child: const Text('Manage'),
+                              ),
+                            ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            AccessibilityModeSection(
-              accessibilityMode: appState.account.accessibilityMode,
-              exclamationMode: appState.account.exclamationMode,
-              onAccessibilityChanged: appState.setAccessibilityMode,
-              onExclamationChanged: appState.setExclamationMode,
-            ),
+            if (!ui.accessibilityMode) ...[
+              const SizedBox(height: 16),
+              AccessibilityModeSection(
+                accessibilityMode: appState.account.accessibilityMode,
+                exclamationMode: appState.account.exclamationMode,
+                onAccessibilityChanged: appState.setAccessibilityMode,
+                onExclamationChanged: appState.setExclamationMode,
+              ),
+            ],
             const SizedBox(height: 16),
             Card(
               child: Column(
                 children: [
                   ListTile(
                     title: const Text('Settings'),
-                    subtitle: const Text('Offline mode, sync copy, and safety preferences.'),
+                    subtitle: const Text(
+                      'Offline mode, sync copy, and safety preferences.',
+                    ),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () =>
-                        Navigator.pushNamed(context, AppRoutes.settings),
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     title: const Text('Help & support'),
-                    subtitle:
-                        const Text('FAQs, support contact, and system explainers.'),
+                    subtitle: const Text(
+                      'FAQs, support contact, and system explainers.',
+                    ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => Navigator.pushNamed(context, AppRoutes.help),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     title: const Text('Sign out'),
-                    subtitle:
-                        const Text('Return to the resident sign-in screen.'),
+                    subtitle: const Text('Return to the resident sign-in screen.'),
                     trailing: const Icon(Icons.logout_rounded),
                     onTap: () {
                       appState.signOut();
@@ -137,6 +171,22 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: const ProfileScreen(showScreenTitle: false),
       ),
     );
   }

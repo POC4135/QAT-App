@@ -24,14 +24,19 @@ class StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = _toneStyle(tone);
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
+    final style = _toneStyle(palette, tone);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(ui.cardPadding),
       decoration: BoxDecoration(
         color: style.background,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: style.border),
+        borderRadius: BorderRadius.circular(ui.cardRadius),
+        border: Border.all(
+          color: style.border,
+          width: ui.accessibilityMode ? 2 : 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +57,7 @@ class StatusBanner extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: QatColors.textPrimary,
+                    color: palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -89,38 +94,38 @@ class _BannerStyle {
   final IconData icon;
 }
 
-_BannerStyle _toneStyle(StatusTone tone) {
+_BannerStyle _toneStyle(QatPalette palette, StatusTone tone) {
   switch (tone) {
     case StatusTone.ok:
-      return const _BannerStyle(
-        background: QatColors.okSoft,
-        border: QatColors.cardBorder,
+      return _BannerStyle(
+        background: palette.okSoft,
+        border: palette.cardBorderStrong,
         iconBackground: Colors.white,
-        foreground: QatColors.ok,
+        foreground: palette.ok,
         icon: Icons.check_circle_outline_rounded,
       );
     case StatusTone.warning:
-      return const _BannerStyle(
-        background: QatColors.warningSoft,
-        border: Color(0xFFF0D7A8),
+      return _BannerStyle(
+        background: palette.warningSoft,
+        border: palette.warning,
         iconBackground: Colors.white,
-        foreground: QatColors.warning,
+        foreground: palette.warning,
         icon: Icons.info_outline_rounded,
       );
     case StatusTone.emergency:
-      return const _BannerStyle(
-        background: QatColors.emergencySoft,
-        border: Color(0xFFF1C9C5),
+      return _BannerStyle(
+        background: palette.emergencySoft,
+        border: palette.emergency,
         iconBackground: Colors.white,
-        foreground: QatColors.emergency,
+        foreground: palette.emergency,
         icon: Icons.warning_amber_rounded,
       );
     case StatusTone.info:
-      return const _BannerStyle(
-        background: QatColors.infoSoft,
-        border: Color(0xFFC7DEE9),
+      return _BannerStyle(
+        background: palette.infoSoft,
+        border: palette.info,
         iconBackground: Colors.white,
-        foreground: QatColors.info,
+        foreground: palette.info,
         icon: Icons.wifi_tethering_error_rounded,
       );
   }

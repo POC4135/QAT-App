@@ -18,22 +18,25 @@ class QuickActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
+
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ui.cardRadius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(ui.cardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: QatColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(16),
+                  color: palette.surfaceMuted,
+                  borderRadius: BorderRadius.circular(ui.disclosureRadius),
                 ),
-                child: Icon(icon, color: QatColors.ok),
+                child: Icon(icon, color: palette.ok, size: ui.iconSize),
               ),
               const SizedBox(height: 14),
               Text(title, style: Theme.of(context).textTheme.titleMedium),

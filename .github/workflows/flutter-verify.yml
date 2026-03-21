@@ -21,17 +21,14 @@ jobs:
           channel: stable
           flutter-version: 3.41.4
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Set up Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@v1
 
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Run tests
-        run: flutter test
-
-      - name: Build web bundle
-        run: flutter build web
+      - name: Trust proof verification
+        env:
+          CHROME_EXECUTABLE: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: bash tool/trust_proof.sh
 
       - name: Basic secret scan
         shell: bash

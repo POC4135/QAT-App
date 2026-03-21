@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/presentation.dart';
 import '../core/app_theme.dart';
 import '../models/emergency_incident.dart';
 
@@ -15,39 +16,44 @@ class HistoryListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
     final color = switch (incident.status) {
-      IncidentStatus.active || IncidentStatus.escalated => QatColors.emergency,
-      IncidentStatus.cancelled => QatColors.warning,
-      IncidentStatus.acknowledged => QatColors.info,
-      IncidentStatus.resolved => QatColors.ok,
+      IncidentStatus.active || IncidentStatus.escalated => palette.emergency,
+      IncidentStatus.cancelled => palette.warning,
+      IncidentStatus.acknowledged => palette.info,
+      IncidentStatus.resolved => palette.ok,
     };
 
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(ui.cardRadius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(ui.cardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      incident.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                  Text(
+                    incident.title,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ui.accessibilityMode ? 14 : 10,
+                      vertical: ui.accessibilityMode ? 8 : 6,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      incident.statusLabel,
+                      incidentStatusLabel(incident.status),
                       style: Theme.of(context)
                           .textTheme
                           .labelSmall
@@ -67,9 +73,16 @@ class HistoryListItem extends StatelessWidget {
               Text(
                 incident.responseLabel,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: QatColors.textPrimary,
+                  color: palette.textPrimary,
                 ),
               ),
+              if (ui.accessibilityMode) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Tap to open the full steps and contact updates.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ],
           ),
         ),

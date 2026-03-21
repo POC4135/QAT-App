@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_routes.dart';
+import '../../core/presentation.dart';
 import '../../core/app_state.dart';
+import '../../core/app_theme.dart';
 import '../../models/emergency_incident.dart';
 import '../../widgets/calm_confirmation_banner.dart';
+import '../../widgets/simple_disclosure_card.dart';
 import '../../widgets/status_banner.dart';
 
 class HistoryDetailScreen extends StatelessWidget {
@@ -14,39 +17,79 @@ class HistoryDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
-    final incident = appState.incidentById(incidentId);
+    final incident = appState.incidentByIdOrNull(incidentId);
+    final ui = context.qatUi;
 
-    final tone = switch (incident.status) {
-      IncidentStatus.active || IncidentStatus.escalated => StatusTone.emergency,
-      IncidentStatus.cancelled => StatusTone.warning,
-      IncidentStatus.acknowledged => StatusTone.info,
-      IncidentStatus.resolved => StatusTone.ok,
-    };
+    if (incident == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(ui.accessibilityMode ? 'What happened' : 'Incident details'),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'This history item could not be found. Return to history for the latest list.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.history,
+                      (route) => false,
+                    ),
+                    child: const Text('Open history'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final tone = incidentTone(incident);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Incident details')),
+      appBar: AppBar(
+        title: Text(ui.accessibilityMode ? 'What happened' : 'Incident details'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: EdgeInsets.fromLTRB(
+            ui.screenHorizontalPadding,
+            12,
+            ui.screenHorizontalPadding,
+            32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               StatusBanner(
                 tone: tone,
-                title: incident.title,
+                title: incidentHeadline(
+                  incident,
+                  accessibilityMode: ui.accessibilityMode,
+                ),
                 message:
-                    '${incident.statusLabel} · ${incident.createdLabel}. ${incident.summary}',
+                    '${incidentStatusLabel(incident.status)} · ${incident.createdLabel}. ${incident.summary}',
               ),
               const SizedBox(height: 14),
-              if (!incident.isActive)
+              if (!incident.isActive) ...[
                 CalmConfirmationBanner(
                   title: incident.statusLabel,
                   message: incident.latestUpdateLabel,
                 ),
-              if (!incident.isActive) const SizedBox(height: 14),
+                const SizedBox(height: 14),
+              ],
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(ui.cardPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -76,58 +119,51 @@ class HistoryDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              if (incident.responders.isNotEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Who responded',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        for (final responder in incident.responders) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  responder.name,
-                                  style:
-                                      Theme.of(context).textTheme.titleSmall,
-                                ),
-                              ),
-                              Text(
-                                responder.status,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${responder.role} · ${responder.timeLabel}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (responder != incident.responders.last)
-                            const Divider(height: 20),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 14),
-              Card(
-                child: ExpansionTile(
-                  tilePadding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                  childrenPadding:
-                      const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                  title: const Text('Full timeline'),
-                  subtitle: const Text(
-                    'Detailed updates are kept behind one extra tap for clarity.',
-                  ),
+              SimpleDisclosureCard(
+                title: ui.accessibilityMode ? 'Details' : 'More details',
+                subtitle: ui.accessibilityMode
+                    ? 'Open if you want the contact updates and full timeline.'
+                    : 'Open for responders and the full step-by-step timeline.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (incident.responders.isNotEmpty) ...[
+                      Text(
+                        'Who responded',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      for (final responder in incident.responders) ...[
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              responder.name,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            Text(
+                              responder.status,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${responder.role} · ${responder.timeLabel}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        if (responder != incident.responders.last)
+                          const Divider(height: 20),
+                      ],
+                      const SizedBox(height: 18),
+                    ],
+                    Text(
+                      'Timeline',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 10),
                     for (final update in incident.updates) ...[
                       Align(
                         alignment: Alignment.centerLeft,
@@ -157,10 +193,7 @@ class HistoryDetailScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(
-                      context,
-                      AppRoutes.devices,
-                    ),
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.devices),
                     child: const Text('Open Devices tab'),
                   ),
                 ),

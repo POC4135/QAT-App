@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_state.dart';
+import '../../core/app_theme.dart';
 import '../../models/emergency_contact.dart';
 
 class EditContactScreen extends StatefulWidget {
@@ -64,8 +65,9 @@ class _EditContactScreenState extends State<EditContactScreen> {
       name: _nameController.text.trim().isEmpty
           ? 'New contact'
           : _nameController.text.trim(),
-      role:
-          _roleController.text.trim().isEmpty ? 'Emergency contact' : _roleController.text.trim(),
+      role: _roleController.text.trim().isEmpty
+          ? 'Emergency contact'
+          : _roleController.text.trim(),
       phone: _phoneController.text.trim().isEmpty
           ? '+1 404 555 0100'
           : _phoneController.text.trim(),
@@ -84,17 +86,33 @@ class _EditContactScreenState extends State<EditContactScreen> {
   @override
   Widget build(BuildContext context) {
     final editing = widget.contactId != null;
+    final ui = context.qatUi;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(editing ? 'Edit contact' : 'Add contact'),
-      ),
+      appBar: AppBar(title: Text(editing ? 'Edit contact' : 'Add contact')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: EdgeInsets.fromLTRB(
+            ui.screenHorizontalPadding,
+            12,
+            ui.screenHorizontalPadding,
+            32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (ui.accessibilityMode) ...[
+                Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(ui.cardPadding),
+                    child: Text(
+                      'Keep this simple. Add one name, one phone number, and the right priority.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               TextField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
@@ -130,19 +148,20 @@ class _EditContactScreenState extends State<EditContactScreen> {
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Primary contact'),
-                subtitle:
-                    const Text('Highlight this contact at the top of the list.'),
+                subtitle: const Text(
+                  'Highlight this contact at the top of the list.',
+                ),
                 value: _isPrimary,
                 onChanged: (value) => setState(() => _isPrimary = value),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Supports messaging'),
-                subtitle:
-                    const Text('Show message as a quick action alongside calling.'),
+                subtitle: const Text(
+                  'Show message as a quick action alongside calling.',
+                ),
                 value: _supportsMessaging,
-                onChanged: (value) =>
-                    setState(() => _supportsMessaging = value),
+                onChanged: (value) => setState(() => _supportsMessaging = value),
               ),
               const SizedBox(height: 18),
               SizedBox(

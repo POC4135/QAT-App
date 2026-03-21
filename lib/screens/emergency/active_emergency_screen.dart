@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/launch_service.dart';
+import '../../core/presentation.dart';
 import '../../core/app_routes.dart';
 import '../../core/app_state.dart';
 import '../../core/app_theme.dart';
 import '../../models/emergency_incident.dart';
+import '../../widgets/action_confirmation_dialog.dart';
 import '../../widgets/calm_confirmation_banner.dart';
+import '../../widgets/simple_disclosure_card.dart';
 import '../../widgets/status_banner.dart';
 
 class ActiveEmergencyScreen extends StatelessWidget {
@@ -13,20 +16,20 @@ class ActiveEmergencyScreen extends StatelessWidget {
 
   final String? incidentId;
 
-  Future<void> _callPrimary(String phone) async {
-    await launchUrl(Uri(scheme: 'tel', path: phone));
-  }
-
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
+    final ui = context.qatUi;
+    final palette = context.qatPalette;
     final incident = incidentId != null
-        ? appState.incidentById(incidentId!)
+        ? appState.incidentByIdOrNull(incidentId!)
         : appState.activeIncident;
 
     if (incident == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Emergency status')),
+        appBar: AppBar(
+          title: Text(ui.accessibilityMode ? 'Help status' : 'Emergency status'),
+        ),
         body: const SafeArea(
           child: Center(
             child: Padding(
@@ -39,23 +42,29 @@ class ActiveEmergencyScreen extends StatelessWidget {
     }
 
     final isActive = incident.isActive;
-    final primaryContact = appState.primaryContacts.first;
-    final tone = !isActive
-        ? StatusTone.ok
-        : incident.status == IncidentStatus.acknowledged
-            ? StatusTone.info
-            : StatusTone.emergency;
-    final title = isActive
-        ? '${incident.severityLabel} active'
-        : '${incident.severityLabel} ${incident.statusLabel.toLowerCase()}';
+    final primaryContact = appState.primaryContacts.isEmpty
+        ? (appState.contacts.isEmpty ? null : appState.contacts.first)
+        : appState.primaryContacts.first;
+    final tone = incidentTone(incident);
+    final title = incidentHeadline(
+      incident,
+      accessibilityMode: ui.accessibilityMode,
+    );
     final canSubmitStateChange = appState.canSubmitStateChanges;
     final needsResolution = incident.status == IncidentStatus.acknowledged;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Emergency status')),
+      appBar: AppBar(
+        title: Text(ui.accessibilityMode ? 'Help status' : 'Emergency status'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          padding: EdgeInsets.fromLTRB(
+            ui.screenHorizontalPadding,
+            12,
+            ui.screenHorizontalPadding,
+            32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -78,7 +87,9 @@ class ActiveEmergencyScreen extends StatelessWidget {
               if (incident.guidance != null) ...[
                 StatusBanner(
                   tone: StatusTone.warning,
-                  title: 'Safety guidance',
+                  title: ui.accessibilityMode
+                      ? 'Leave the area first'
+                      : 'Safety guidance',
                   message: incident.guidance!,
                 ),
                 const SizedBox(height: 14),
@@ -92,20 +103,23 @@ class ActiveEmergencyScreen extends StatelessWidget {
               ],
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(ui.cardPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'What the system already did',
+                        ui.accessibilityMode
+                            ? 'What the app already did'
+                            : 'What the system already did',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 12),
-                      for (final responder in incident.responders) ...[
-                        _ResponderRow(responder: responder),
-                        if (responder != incident.responders.last)
-                          const Divider(height: 22),
-                      ],
+                      const SizedBox(height: 10),
+                      Text(
+                        ui.accessibilityMode
+                            ? 'Help messages were sent. You can open details below if you want the full list.'
+                            : 'Responders and contacts were updated right away. Open details if you need the full record.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ),
@@ -113,18 +127,24 @@ class ActiveEmergencyScreen extends StatelessWidget {
               const SizedBox(height: 14),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(ui.cardPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isActive ? 'Next best action' : 'What happens next',
+                        isActive
+                            ? (ui.accessibilityMode
+                                ? 'What to do now'
+                                : 'Next best action')
+                            : 'What happens next',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         isActive
-                            ? 'Use one clear action at a time. The main button below is the safest next step from this screen.'
+                            ? (ui.accessibilityMode
+                                ? 'Use one clear button at a time. The main button below is the safest next step.'
+                                : 'Use one clear action at a time. The main button below is the safest next step from this screen.')
                             : 'The incident is closed. You can return home or review the history entry for reassurance.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
@@ -135,18 +155,19 @@ class ActiveEmergencyScreen extends StatelessWidget {
                           child: FilledButton.icon(
                             style: FilledButton.styleFrom(
                               backgroundColor: canSubmitStateChange
-                                  ? QatColors.emergency
-                                  : QatColors.info,
+                                  ? palette.emergency
+                                  : palette.info,
                             ),
                             onPressed: () {
                               if (!canSubmitStateChange) {
-                                _callPrimary(primaryContact.phone);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Unable to confirm a state change while offline. Call placed to your primary contact.',
-                                    ),
-                                  ),
+                                if (primaryContact == null) {
+                                  return;
+                                }
+                                launchPhoneCall(
+                                  context,
+                                  primaryContact.phone,
+                                  failureMessage:
+                                      'We could not place the fallback call. Please contact ${primaryContact.name} manually at ${primaryContact.phone}.',
                                 );
                                 return;
                               }
@@ -155,15 +176,6 @@ class ActiveEmergencyScreen extends StatelessWidget {
                               } else {
                                 appState.acknowledgeIncident(incident.id);
                               }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    needsResolution
-                                        ? 'Incident resolved. Responders were updated.'
-                                        : 'Safety acknowledged. Contacts were updated.',
-                                  ),
-                                ),
-                              );
                             },
                             icon: Icon(
                               !canSubmitStateChange
@@ -174,11 +186,13 @@ class ActiveEmergencyScreen extends StatelessWidget {
                             ),
                             label: Text(
                               !canSubmitStateChange
-                                  ? 'Call ${primaryContact.name}'
+                                  ? primaryContact == null
+                                      ? 'No contact available'
+                                      : 'Call ${primaryContact.name}'
                                   : needsResolution
                                       ? 'Mark resolved'
                                       : incident.isHazard
-                                          ? 'I\'m safe'
+                                          ? 'I am safe'
                                           : 'Acknowledge',
                             ),
                           ),
@@ -188,28 +202,52 @@ class ActiveEmergencyScreen extends StatelessWidget {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: () {
-                                appState.cancelIncident(incident.id);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Alert stopped. Responders received a closure update.',
-                                    ),
-                                  ),
+                              onPressed: () async {
+                                final confirmed =
+                                    await showActionConfirmationDialog(
+                                  context,
+                                  title: incident.isHazard
+                                      ? 'Stop this alarm?'
+                                      : 'Cancel this alert?',
+                                  message: incident.isHazard
+                                      ? 'Use this only if the danger has passed and you want to stop the alarm. Contacts will receive a closure update.'
+                                      : 'Use this only if the alert was a mistake. Contacts will receive a closure update.',
+                                  confirmLabel: incident.isHazard
+                                      ? 'Stop alarm'
+                                      : 'Cancel alert',
                                 );
+                                if (!confirmed || !context.mounted) {
+                                  return;
+                                }
+                                appState.cancelIncident(incident.id);
                               },
                               icon: const Icon(Icons.stop_circle_outlined),
                               label: Text(
-                                incident.isHazard ? 'Stop alarm' : 'Cancel alert',
+                                incident.isHazard
+                                    ? 'Stop alarm'
+                                    : ui.accessibilityMode
+                                        ? 'Cancel false alarm'
+                                        : 'Cancel alert',
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          TextButton.icon(
-                            onPressed: () => _callPrimary(primaryContact.phone),
-                            icon: const Icon(Icons.call_outlined),
-                            label: Text('Call ${primaryContact.name}'),
-                          ),
+                          if (!ui.accessibilityMode) ...[
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed: primaryContact == null
+                                  ? null
+                                  : () => launchPhoneCall(
+                                        context,
+                                        primaryContact.phone,
+                                      ),
+                              icon: const Icon(Icons.call_outlined),
+                              label: Text(
+                                primaryContact == null
+                                    ? 'No contact available'
+                                    : 'Call ${primaryContact.name}',
+                              ),
+                            ),
+                          ],
                         ],
                       ] else ...[
                         SizedBox(
@@ -229,18 +267,55 @@ class ActiveEmergencyScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Card(
-                child: ExpansionTile(
-                  tilePadding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-                  childrenPadding:
-                      const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                  title: const Text('Details timeline'),
-                  subtitle: Text(
-                    'Open only if you need the step-by-step record.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+              SimpleDisclosureCard(
+                title: ui.accessibilityMode ? 'Details' : 'Details timeline',
+                subtitle: ui.accessibilityMode
+                    ? 'Open only if you want the contact list and step-by-step record.'
+                    : 'Open only if you need the step-by-step record.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (ui.accessibilityMode &&
+                        canSubmitStateChange &&
+                        isActive &&
+                        !needsResolution) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: primaryContact == null
+                              ? null
+                              : () => launchPhoneCall(
+                                    context,
+                                    primaryContact.phone,
+                                  ),
+                          icon: const Icon(Icons.call_outlined),
+                          label: Text(
+                            primaryContact == null
+                                ? 'No contact available'
+                                : 'Call ${primaryContact.name}',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                    if (incident.responders.isNotEmpty) ...[
+                      Text(
+                        'Who was contacted',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 10),
+                      for (final responder in incident.responders) ...[
+                        _ResponderRow(responder: responder),
+                        if (responder != incident.responders.last)
+                          const Divider(height: 22),
+                      ],
+                      const SizedBox(height: 18),
+                    ],
+                    Text(
+                      'Step-by-step record',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 10),
                     for (final update in incident.updates) ...[
                       _TimelineRow(update: update),
                       if (update != incident.updates.last)
@@ -264,33 +339,51 @@ class _ResponderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          margin: const EdgeInsets.only(top: 2),
-          width: 10,
-          height: 10,
-          decoration: const BoxDecoration(
-            color: QatColors.ok,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(responder.name, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 2),
-              Text(
-                '${responder.role} · ${responder.status}',
-                style: Theme.of(context).textTheme.bodySmall,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              width: ui.accessibilityMode ? 12 : 10,
+              height: ui.accessibilityMode ? 12 : 10,
+              decoration: BoxDecoration(
+                color: palette.ok,
+                shape: BoxShape.circle,
               ),
-            ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    responder.name,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${responder.role} · ${responder.status}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.only(left: 22),
+          child: Text(
+            responder.timeLabel,
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
-        Text(responder.timeLabel, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -303,21 +396,14 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(update.timeLabel, style: Theme.of(context).textTheme.labelMedium),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(update.title, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text(update.detail, style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
+        const SizedBox(height: 6),
+        Text(update.title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(update.detail, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

@@ -14,17 +14,23 @@ class CalmConfirmationBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(ui.cardPadding),
       decoration: BoxDecoration(
-        color: QatColors.okSoft,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: QatColors.cardBorder),
+        color: palette.okSoft,
+        borderRadius: BorderRadius.circular(ui.cardRadius),
+        border: Border.all(
+          color: palette.cardBorderStrong,
+          width: ui.accessibilityMode ? 2 : 1,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.verified_rounded, color: QatColors.ok),
+          Icon(Icons.verified_rounded, color: palette.ok, size: ui.iconSize),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

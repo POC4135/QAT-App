@@ -32,53 +32,62 @@ class _LandingScreenState extends State<LandingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final palette = context.qatPalette;
+    final ui = context.qatUi;
+    final accessibilityMode = ui.accessibilityMode;
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(ui.screenHorizontalPadding),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: EdgeInsets.all(ui.cardPadding - 4),
                     decoration: BoxDecoration(
-                      color: QatColors.surfaceMuted,
-                      borderRadius: BorderRadius.circular(20),
+                      color: palette.surfaceMuted,
+                      borderRadius: BorderRadius.circular(ui.cardRadius),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.health_and_safety_rounded,
-                      color: QatColors.ok,
-                      size: 28,
+                      color: palette.ok,
+                      size: ui.iconSize + 4,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'QuickAid resident access',
+                    accessibilityMode
+                        ? 'Sign in to get help fast'
+                        : 'QuickAid resident access',
                     style: theme.textTheme.displaySmall,
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Sign in to check system readiness, start an alert quickly, and review recent incidents without digging through long screens.',
+                    accessibilityMode
+                        ? 'Use your username and password to open a simpler, larger version of the app.'
+                        : 'Sign in to check system readiness, start an alert quickly, and review recent incidents without digging through long screens.',
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(ui.cardPadding),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Resident sign in',
+                            accessibilityMode ? 'Sign in' : 'Resident sign in',
                             style: theme.textTheme.titleLarge,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Placeholder sign-in only for this build. Use any username and password.',
+                            accessibilityMode
+                                ? 'This demo accepts any username and password.'
+                                : 'Placeholder sign-in only for this build. Use any username and password.',
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: 18),

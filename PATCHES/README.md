@@ -32,6 +32,7 @@ The current working tree contains the audit remediation patch set.
 - [`.github/workflows/flutter-verify.yml`](/Users/prakhar/Documents/QAT/qat/.github/workflows/flutter-verify.yml)
 
 ## Documentation
+- [`REPO_MANIFEST.md`](/Users/prakhar/Documents/QAT/qat/REPO_MANIFEST.md)
 - [`PLAN.md`](/Users/prakhar/Documents/QAT/qat/PLAN.md)
 - [`FINDINGS.md`](/Users/prakhar/Documents/QAT/qat/FINDINGS.md)
 - [`VERIFICATION.md`](/Users/prakhar/Documents/QAT/qat/VERIFICATION.md)
