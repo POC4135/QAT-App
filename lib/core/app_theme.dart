@@ -39,42 +39,47 @@ class QatPalette extends ThemeExtension<QatPalette> {
   final Color info;
   final Color infoSoft;
 
+  // ── Alerto Tech brand palette ──────────────────────────────────────────────
+  // Navy:  oklch(38% 0.09 240) → #00476D  |  Teal: oklch(60% 0.15 175) → #009C7B
+  // Navy dark: #002742  |  Navy darkest: #001425
+  // Teal light: #39BDA0  |  Teal dark: #006249
+
   static const normal = QatPalette(
-    background: Color(0xFFF5FAF6),
-    surface: Colors.white,
-    surfaceMuted: Color(0xFFE7F2E8),
-    cardBorder: Color(0xFFD5E4D6),
-    cardBorderStrong: Color(0xFFA8C0AB),
-    textPrimary: Color(0xFF102118),
-    textSecondary: Color(0xFF4E6254),
-    textTertiary: Color(0xFF64756A),
-    ok: Color(0xFF2F7D4B),
-    okSoft: Color(0xFFE4F4E8),
-    warning: Color(0xFFB78122),
-    warningSoft: Color(0xFFFFF4DD),
-    emergency: Color(0xFFC63F36),
-    emergencySoft: Color(0xFFFCE9E7),
-    info: Color(0xFF245A76),
-    infoSoft: Color(0xFFE4F1F8),
+    background:       Color(0xFFF3F8F9),   // very light teal-tinted white
+    surface:          Colors.white,
+    surfaceMuted:     Color(0xFFE0F1EE),   // soft teal tint
+    cardBorder:       Color(0xFFBFDAD5),
+    cardBorderStrong: Color(0xFF7BBCB4),
+    textPrimary:      Color(0xFF001425),   // navy darkest — high contrast
+    textSecondary:    Color(0xFF00476D),   // navy primary
+    textTertiary:     Color(0xFF4A7B8A),   // muted navy
+    ok:               Color(0xFF009C7B),   // teal primary — main action colour
+    okSoft:           Color(0xFFD8F3ED),   // soft teal background
+    warning:          Color(0xFFB07D1A),
+    warningSoft:      Color(0xFFFFF3D6),
+    emergency:        Color(0xFFC63F36),
+    emergencySoft:    Color(0xFFFCE9E7),
+    info:             Color(0xFF00476D),   // navy primary — informational
+    infoSoft:         Color(0xFFDDEDF5),   // soft navy background
   );
 
   static const accessibility = QatPalette(
-    background: Color(0xFFF9FAFB),
-    surface: Color(0xFFFFFFFF),
-    surfaceMuted: Color(0xFFF1F4F6),
-    cardBorder: Color(0xFF637079),
-    cardBorderStrong: Color(0xFF23313A),
-    textPrimary: Color(0xFF0A0F14),
-    textSecondary: Color(0xFF162229),
-    textTertiary: Color(0xFF2D3B44),
-    ok: Color(0xFF0D5F23),
-    okSoft: Color(0xFFE7F6EA),
-    warning: Color(0xFF915F05),
-    warningSoft: Color(0xFFFFF1CF),
-    emergency: Color(0xFF9E1F16),
-    emergencySoft: Color(0xFFFFECE8),
-    info: Color(0xFF0E4B6B),
-    infoSoft: Color(0xFFE8F3FA),
+    background:       Color(0xFFF5FAFA),
+    surface:          Color(0xFFFFFFFF),
+    surfaceMuted:     Color(0xFFE8F4F2),
+    cardBorder:       Color(0xFF3D6E78),
+    cardBorderStrong: Color(0xFF001425),
+    textPrimary:      Color(0xFF000D18),
+    textSecondary:    Color(0xFF002742),   // navy dark
+    textTertiary:     Color(0xFF003A55),
+    ok:               Color(0xFF006249),   // teal dark — higher contrast
+    okSoft:           Color(0xFFCCEDE6),
+    warning:          Color(0xFF8A5E00),
+    warningSoft:      Color(0xFFFFF0C8),
+    emergency:        Color(0xFF9E1F16),
+    emergencySoft:    Color(0xFFFFECE8),
+    info:         Color(0xFF002742),   // navy dark
+    infoSoft:     Color(0xFFD6E8F2),
   );
 
   @override

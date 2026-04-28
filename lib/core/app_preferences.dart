@@ -6,6 +6,7 @@ class AppPreferencesStore {
   static const _accessibilityModeKey = 'accessibility_mode';
   static const _exclamationModeKey = 'exclamation_mode';
   static const _offlineModeKey = 'offline_mode';
+  static const _onboardingCompleteKey = 'onboarding_complete';
   static const _cachedEmergencyAutoTriggerSecondsKey =
       'cached_emergency_auto_trigger_seconds';
   static const _cachedEmergencyConfigFetchedAtKey =
@@ -23,6 +24,8 @@ class AppPreferencesStore {
   bool get exclamationMode =>
       _preferences.getBool(_exclamationModeKey) ?? true;
   bool get offlineMode => _preferences.getBool(_offlineModeKey) ?? false;
+  bool get onboardingComplete =>
+      _preferences.getBool(_onboardingCompleteKey) ?? false;
   int? get cachedEmergencyAutoTriggerSeconds =>
       _preferences.getInt(_cachedEmergencyAutoTriggerSecondsKey);
   int? get cachedEmergencyConfigFetchedAtMs =>
@@ -38,6 +41,10 @@ class AppPreferencesStore {
 
   Future<void> setOfflineMode(bool value) {
     return _preferences.setBool(_offlineModeKey, value);
+  }
+
+  Future<void> setOnboardingComplete(bool value) {
+    return _preferences.setBool(_onboardingCompleteKey, value);
   }
 
   Future<void> setCachedEmergencyAutoTriggerSeconds(int value) {

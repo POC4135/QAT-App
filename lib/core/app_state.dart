@@ -7,6 +7,7 @@ import 'ui_preferences_state.dart';
 import '../models/device_health.dart';
 import '../models/emergency_contact.dart';
 import '../models/emergency_incident.dart';
+import '../models/onboarding_data.dart';
 import '../models/resident_account.dart';
 
 class AppStateController extends ChangeNotifier {
@@ -14,10 +15,11 @@ class AppStateController extends ChangeNotifier {
     AppPreferencesStore? preferences,
     bool initialAccessibilityMode = false,
   })  : _preferences = preferences,
-        _session = const AppSessionState(
+        _session = AppSessionState(
           isSignedIn: false,
           residentName: 'Sample Resident',
           homeLabel: 'Sample Residence · Unit 12',
+          onboardingComplete: preferences?.onboardingComplete ?? false,
         ),
         _uiPreferences = UiPreferencesState(
           accessibilityMode:
@@ -37,10 +39,13 @@ class AppStateController extends ChangeNotifier {
   UiPreferencesState _uiPreferences;
   final EmergencyStore _emergencyStore;
   HistoryFilter _historyFilter;
+  OnboardingData _onboardingData = OnboardingData.empty;
 
   AppSessionState get session => _session;
   UiPreferencesState get uiPreferences => _uiPreferences;
   bool get isSignedIn => _session.isSignedIn;
+  bool get onboardingComplete => _session.onboardingComplete;
+  OnboardingData get onboardingData => _onboardingData;
   ResidentAccount get account => ResidentAccount(
         name: _session.residentName,
         homeLabel: _session.homeLabel,
@@ -84,6 +89,29 @@ class AppStateController extends ChangeNotifier {
   void signOut() {
     _session = _session.copyWith(isSignedIn: false);
     notifyListeners();
+  }
+
+  // ── Onboarding ────────────────────────────────────────────────────────────
+
+  /// Saves data from a single onboarding step into the in-memory store.
+  /// Each step calls this with a partial [OnboardingData] update.
+  void saveOnboardingStep(OnboardingData Function(OnboardingData) updater) {
+    _onboardingData = updater(_onboardingData);
+    notifyListeners();
+  }
+
+  /// Marks onboarding as complete, persists the flag, and optionally updates
+  /// the resident name from the collected profile data.
+  void markOnboardingComplete() {
+    final profile = _onboardingData.profile;
+    _session = _session.copyWith(
+      onboardingComplete: true,
+      residentName: profile != null && profile.fullName.isNotEmpty
+          ? profile.fullName
+          : _session.residentName,
+    );
+    notifyListeners();
+    _preferences?.setOnboardingComplete(true);
   }
 
   void setHistoryFilter(HistoryFilter value) {

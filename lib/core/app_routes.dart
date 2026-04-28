@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
 import '../screens/auth/landing_screen.dart';
+import '../screens/auth/verify_otp_screen.dart';
+import '../screens/auth/welcome_screen.dart';
 import '../screens/devices/devices_screen.dart';
 import '../screens/devices/device_detail_screen.dart';
 import '../screens/emergency/active_emergency_screen.dart';
 import '../screens/emergency/emergency_choice_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/history/history_detail_screen.dart';
+import '../screens/onboarding/step1_profile_screen.dart';
+import '../screens/onboarding/step2_location_screen.dart';
+import '../screens/onboarding/step3_medical_screen.dart';
+import '../screens/onboarding/step4_health_screen.dart';
+import '../screens/onboarding/step5_household_screen.dart';
+import '../screens/onboarding/step6_emergency_contacts_screen.dart';
 import '../screens/profile/contacts_screen.dart';
 import '../screens/profile/edit_contact_screen.dart';
 import '../screens/profile/help_screen.dart';
@@ -17,6 +25,8 @@ import 'app_state.dart';
 
 class AppRoutes {
   static const landing = '/';
+  static const authWelcome = '/auth/welcome';
+  static const authVerifyOtp = '/auth/verify-otp';
   static const home = '/home';
   static const emergencyChoice = '/emergency/choose';
   static const emergencyActive = '/emergency/active';
@@ -30,8 +40,20 @@ class AppRoutes {
   static const settings = '/profile/settings';
   static const help = '/profile/help';
 
+  // ── Onboarding (6 sequential steps) ────────────────────────────────────────
+  static const onboardingProfile           = '/onboarding/profile';
+  static const onboardingLocation          = '/onboarding/location';
+  static const onboardingMedical           = '/onboarding/medical';
+  static const onboardingHealth            = '/onboarding/health';
+  static const onboardingHousehold         = '/onboarding/household';
+  static const onboardingEmergencyContacts = '/onboarding/emergency-contacts';
+
   static bool isPublic(String? routeName) {
-    return routeName == landing || routeName == help;
+    return routeName == landing ||
+        routeName == authWelcome ||
+        routeName == authVerifyOtp ||
+        routeName == help ||
+        (routeName?.startsWith('/onboarding') ?? false);
   }
 }
 
@@ -51,6 +73,27 @@ class AppRouter {
     switch (routeName) {
       case AppRoutes.landing:
         return _pageRoute(settings, const LandingScreen());
+
+      // ── Auth flow ─────────────────────────────────────────────────────────
+      case AppRoutes.authWelcome:
+        return _pageRoute(settings, const WelcomeScreen());
+      case AppRoutes.authVerifyOtp:
+        return _pageRoute(settings, const VerifyOtpScreen());
+
+      // ── Onboarding steps ──────────────────────────────────────────────────
+      case AppRoutes.onboardingProfile:
+        return _slideRoute(settings, const OnboardingProfileScreen());
+      case AppRoutes.onboardingLocation:
+        return _slideRoute(settings, const OnboardingLocationScreen());
+      case AppRoutes.onboardingMedical:
+        return _slideRoute(settings, const OnboardingMedicalScreen());
+      case AppRoutes.onboardingHealth:
+        return _slideRoute(settings, const OnboardingHealthScreen());
+      case AppRoutes.onboardingHousehold:
+        return _slideRoute(settings, const OnboardingHouseholdScreen());
+      case AppRoutes.onboardingEmergencyContacts:
+        return _slideRoute(settings, const OnboardingEmergencyContactsScreen());
+
       case AppRoutes.home:
         return _pageRoute(settings, const AppShell(initialIndex: 0));
       case AppRoutes.history:
@@ -143,6 +186,30 @@ class AppRouter {
     return MaterialPageRoute<void>(
       builder: (_) => child,
       settings: settings,
+    );
+  }
+
+  /// Slide-from-right transition used for sequential onboarding steps.
+  static PageRouteBuilder<void> _slideRoute(
+    RouteSettings settings,
+    Widget child,
+  ) {
+    return PageRouteBuilder<void>(
+      settings: settings,
+      pageBuilder: (_, __, ___) => child,
+      transitionsBuilder: (_, animation, __, widget) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: widget,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 300),
     );
   }
 }
